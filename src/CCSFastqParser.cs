@@ -91,17 +91,13 @@ namespace ccscheck
             var sp = line.Trim ().Split (',');
             MovieName = sp [0];
             HoleNumber = sp [1];
-            SnrT = sp [2];
-            SnrG = sp [3];
-            SnrA = sp [4];
-            SnrC = sp [5];
-//            SnrT = Convert.ToSingle (sp [2]);
-//            SnrG = Convert.ToSingle (sp [3]);
-//            SnrA = Convert.ToSingle (sp [4]);
-//            SnrC = Convert.ToSingle (sp [5]);
-            CCSReadLength = sp[6];
-            NumPasses = sp [7];
-            PredictedAccuracy = sp [8];
+            SnrT = sp [3];
+            SnrG = sp [4];
+            SnrA = sp [5];
+            SnrC = sp [6];
+            CCSReadLength = sp[7];
+            NumPasses = sp [8];
+            PredictedAccuracy = sp [9];
             DictionaryKey = sp [0] + "/" + sp [1] + "/ccs";
 
         }
