@@ -21,6 +21,7 @@ namespace ccscheck
         public static void Main (string[] args)
         {
             try {
+                Console.WriteLine(System.Environment.CurrentDirectory);
                 PlatformManager.Services.MaxSequenceSize = int.MaxValue;
                 PlatformManager.Services.DefaultBufferSize = 4096;
                 PlatformManager.Services.Is64BitProcessType = true;
@@ -56,7 +57,7 @@ namespace ccscheck
                     }
                     if (Directory.Exists (out_dir)) {
                         Console.WriteLine ("The output directory already exists, please specify a new directory or delete the old one.");
-                        return;
+                        //return;
                     }
 
                     Directory.CreateDirectory (out_dir);
@@ -75,6 +76,7 @@ namespace ccscheck
                     }
                     VariantFilter filter = args.Length > 3 ? new VariantFilter(args[3]) : null;
                     int excludedVariants = 0;
+                    int excludedVariantsAtEnd = 0;
 
                     // Produce aligned reads with variants called in parallel.
                     var reads = new BlockingCollection<Tuple<PacBioCCSRead, BWAPairwiseAlignment, List<Variant>>>();
@@ -84,16 +86,33 @@ namespace ccscheck
                             {
                                 Parallel.ForEach(reader, z => {
                                     try {
+                                        if(z.HoleNumber != 7528) {return;}
                                         BWAPairwiseAlignment aln = null;
                                         List<Variant> variants = null;
                                         if (callVariants) {
                                             aln = bwa.AlignRead(z.Sequence) as BWAPairwiseAlignment;
-                                            if (aln!=null) {
+                                            Console.WriteLine(z.Sequence.ConvertToString());
+                                            Console.WriteLine(aln.AlignedRefSeq.ConvertToString());
+                                            Console.WriteLine(aln.AlignedQuerySeq.ConvertToString());
+                                            var qs = (aln.AlignedQuerySeq as QualitativeSequence);
+                                            var qstr = new String(qs.GetQualityScores().Select(x=> (char)(x+33)).ToArray());
+                                            Console.WriteLine(qstr);
+                                            if (aln != null) {
                                                 variants = VariantCaller.CallVariants(aln);
                                                 variants.ForEach( p => {
                                                     p.StartPosition += aln.AlignedSAMSequence.Pos;
                                                     p.RefName = aln.Reference;
                                                     });
+                                                //Filter out end variants.
+                                                if (variants.Count > 0) {
+                                                    int startCount = variants.Count;
+                                                    variants = variants.Where(v => !v.AtEndOfAlignment).ToList();
+                                                    int endCount = variants.Count;
+                                                    if (endCount != startCount) {
+                                                        var dif = startCount - endCount;
+                                                        Interlocked.Add(ref excludedVariantsAtEnd, dif);
+                                                    }
+                                                }
                                                 // Filter out any crappy variants
                                                 if (filter != null && variants.Count > 0) {
                                                     int startCount = variants.Count;
@@ -115,7 +134,7 @@ namespace ccscheck
                                     } });
                             } catch(Exception thrown) {
                                 Console.WriteLine("Could not parse BAM file: " + thrown.Message);
-                                while(thrown.InnerException!=null) {
+                                while(thrown.InnerException != null) {
                                     Console.WriteLine(thrown.InnerException.Message);
                                     thrown = thrown.InnerException;
                                 }
@@ -138,6 +157,7 @@ namespace ccscheck
                     if(filter != null) {
                         Console.WriteLine("Filtered out " + excludedVariants.ToString() +" variants based on VCF file");
                     }
+                    Console.WriteLine("Filtered out " + excludedVariantsAtEnd.ToString() +" variants for being at end of alignment");
             }
             }
             catch(Exception thrown) {
