@@ -1,0 +1,8 @@
+[submodule "third-party/bio"]
+    path = third-party/bio
+    url = https://github.com/dotnetbio/bio.git
+    branch = master
+[submodule "third-party/BWA-Sharp"]
+    path = third-party/BWA-Sharp
+    url = https://github.com/evolvedmicrobe/BWA-Sharp.git
+    branch = master
